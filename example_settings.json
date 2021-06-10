@@ -1,0 +1,8 @@
+[
+    {
+        "URL": "example.com",
+        "http": "Local port for http including :",
+        "https": "Local port for https, Serversplit handles tls connections though, so its less necessary really",
+        "upgrade": Boolean to force http to https 
+    }
+]
