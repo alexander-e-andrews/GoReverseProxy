@@ -32,7 +32,7 @@ type ReRouteMin struct {
 }
 
 func main() {
-	os.ReadFile("settings.json")
+	//os.ReadFile("settings.json")
 	f, err := os.Open("settings.json")
 	if err != nil {
 		fmt.Println("Could not open settings.json")
