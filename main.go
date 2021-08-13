@@ -44,6 +44,7 @@ func main() {
 	decoder.Decode(&routes)
 	fmt.Printf("%+v\n", routes)
 
+	whiteListedURLs := make([]string, len(routes))
 	httpRoutes := make([]ReRoute, len(routes))
 	httpsRoutes := make([]ReRoute, len(routes))
 	for x := range routes {
@@ -61,12 +62,14 @@ func main() {
 		httpsProx := httputil.NewSingleHostReverseProxy(urlhttps)
 		httpRoutes[x] = ReRoute{BaseURL: routes[x].URL, Proxy: httpProx, Upgrade: routes[x].HttpsUpgrade}
 		httpsRoutes[x] = ReRoute{BaseURL: routes[x].URL, Proxy: httpsProx}
+
+		whiteListedURLs[x] = routes[x].URL
 	}
 
 	dir := "./cert"
 	certManager := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist("putnext.com", "howsadissal.org"),
+		HostPolicy: autocert.HostWhitelist(whiteListedURLs...),
 		Cache:      autocert.DirCache(dir),
 	}
 
@@ -87,7 +90,7 @@ func main() {
 	//httputil.New
 	go runServer(httpserver, false, errorChan)
 	go runServer(httpsserver, true, errorChan)
-	<-errorChan
+	fmt.Println(<-errorChan)
 }
 
 func runServer(server *http.Server, isHttps bool, errChan chan error) {
