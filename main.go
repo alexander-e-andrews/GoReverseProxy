@@ -13,6 +13,8 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
+var ShowErrorPage bool
+
 type Route struct {
 	URL          string `json:"URL"`
 	HttpPort     string `json:"http"`
@@ -32,6 +34,7 @@ type ReRouteMin struct {
 }
 
 func main() {
+	ShowErrorPage = true
 	//os.ReadFile("settings.json")
 	f, err := os.Open("settings.json")
 	if err != nil {
@@ -42,7 +45,6 @@ func main() {
 	var routes []Route
 	decoder := json.NewDecoder(f)
 	decoder.Decode(&routes)
-	fmt.Printf("%+v\n", routes)
 
 	whiteListedURLs := make([]string, len(routes))
 	httpRoutes := make([]ReRoute, len(routes))
@@ -71,6 +73,8 @@ func main() {
 		Prompt:     autocert.AcceptTOS,
 		HostPolicy: autocert.HostWhitelist(whiteListedURLs...),
 		Cache:      autocert.DirCache(dir),
+		Email: "alexander.andrews@incompany.io",
+		
 	}
 
 	//go http.ListenAndServe(http.HandlerFunc(certManager.HTTPHandler(nil)))
@@ -90,7 +94,11 @@ func main() {
 	//httputil.New
 	go runServer(httpserver, false, errorChan)
 	go runServer(httpsserver, true, errorChan)
-	fmt.Println(<-errorChan)
+	//fmt.Println(<-errorChan)
+	for x := range errorChan{
+		_ = x
+		//fmt.Println(x)
+	}
 }
 
 func runServer(server *http.Server, isHttps bool, errChan chan error) {
@@ -125,6 +133,21 @@ func CreateProxyHandler(routes []ReRoute, isHttps bool) func(w http.ResponseWrit
 				return
 			}
 			mappedRoutes[r.Host].Proxy.ServeHTTP(w, r)
+			return
+		}
+		if ShowErrorPage{
+			type ErrorPage struct{
+				Error string `json:"error"`
+				Note string `json:"note"`
+			}
+			info := ErrorPage{}
+			info.Error = "Page Not Found"
+			info.Note = fmt.Sprintf("%s was not found. Please contact admin. \n", r.Host)
+			b, err :=json.Marshal(info)
+			if err != nil{
+				fmt.Println("Failed to marshall our struct that says that a unknown hos was targeted")
+			}
+			w.Write(b)
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)
